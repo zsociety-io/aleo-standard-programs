@@ -1,0 +1,20 @@
+{
+  "program": "arc721.aleo",
+  "version": "0.0.0",
+  "description": "",
+  "license": "MIT",
+  "dependencies": [
+    {
+      "name": "royalty.aleo",
+      "location": "local",
+      "network": null,
+      "path": "../royalty"
+    },
+    {
+      "name": "authority.aleo",
+      "location": "local",
+      "network": null,
+      "path": "../authority"
+    }
+  ]
+}
