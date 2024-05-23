@@ -22,12 +22,12 @@ finalize transfer_authority:
 
 
 
-function assert_authority:
+function check_authorized:
     input r0 as address.public;
-    async assert_authority r0 into r1;
-    output r1 as authority.aleo/assert_authority.future;
+    async check_authorized r0 into r1;
+    output r1 as authority.aleo/check_authorized.future;
 
-finalize assert_authority:
+finalize check_authorized:
     input r0 as address.public;
     get.or_use authority[true] aleo1wamjqlka7d0gazlxdys6n8e8zeee3ymedwvw8elvh7529kwd45rq0plgax into r1;
     assert.eq r0 r1;

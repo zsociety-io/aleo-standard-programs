@@ -1,6 +1,6 @@
 [[package]]
 name = "authority.aleo"
 location = "local"
-path = "/Users/palong/aleo/aleo-store-programs/arc721/../authority"
+path = "/Users/palong/aleo/aleo-store-programs/marketplace-programs/marketplace/../../aleo-std-proposals/arc721/../authority"
 checksum = "fba798fe54df7fa4720823ad5a70fa42e1af034412f70587e7f0b7b463cf03b9"
 dependencies = []

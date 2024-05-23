@@ -1,13 +1,13 @@
 [[package]]
 name = "authority.aleo"
 location = "local"
-path = "/Users/palong/aleo/aleo-store-programs/arc721/../authority"
+path = "/Users/palong/aleo/aleo-store-programs/marketplace-programs/marketplace/../../aleo-std-proposals/arc721/../authority"
 checksum = "fba798fe54df7fa4720823ad5a70fa42e1af034412f70587e7f0b7b463cf03b9"
 dependencies = []
 
 [[package]]
 name = "royalty.aleo"
 location = "local"
-path = "/Users/palong/aleo/aleo-store-programs/arc721/../royalty"
+path = "/Users/palong/aleo/aleo-store-programs/marketplace-programs/marketplace/../../aleo-std-proposals/arc721/../royalty"
 checksum = "a4b0527dfcd7ebcc52a62021cdb96e17d08333d789aa990f06eff9a38442b1b6"
 dependencies = ["authority.aleo"]

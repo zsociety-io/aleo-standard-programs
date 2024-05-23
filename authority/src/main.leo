@@ -6,34 +6,44 @@
 */
 
 program authority.aleo {
-    const initial_authority: address = aleo1wamjqlka7d0gazlxdys6n8e8zeee3ymedwvw8elvh7529kwd45rq0plgax;
+    const initial_authorized: address = aleo1wamjqlka7d0gazlxdys6n8e8zeee3ymedwvw8elvh7529kwd45rq0plgax;
+
+    // caller => (authorized xor is_caller_initial_authorized)
+    mapping operators: address => bool;
 
 
-    mapping authority: bool => address; // true => authority
-
-
-    async transition transfer_authority(
-        public to: address,
+    async transition set_authorized(
+        public operator: address,
+        public is_authorized: bool,
     ) -> Future {
         let caller: address = self.caller;
-        return finalize_transfer_authority(caller, to);
+        return finalize_set_authorized(caller, operator, is_authorized);
     }
-    async function finalize_transfer_authority(
-        public from: address, public to: address
+    async function finalize_set_authorized(
+        public caller: address, public operator: address, public is_authorized: bool,
     ){
-        let current_authority: address = authority.get_or_use(true, initial_authority);
-        assert_eq(from, current_authority);
-        authority.set(true, to);
-    }
-
-
-    async transition assert_authority(public asserted: address) -> Future {
-        return finalize_assert_authority(asserted);
-    }
-    async function finalize_assert_authority(public asserted: address){
-        let current_authority: address = authority.get_or_use(
-            true, initial_authority
+        let is_caller_authorized: bool = (
+            operators
+                .get_or_use(caller, false)
+                .xor(caller == initial_authorized)
         );
-        assert_eq(asserted, current_authority);
+        assert(is_caller_authorized);
+        
+        operators.set(
+            operator,
+            is_authorized.xor(operator == initial_authorized)
+        );
+    }
+
+    async transition check_authorized(public asserted: address) -> Future {
+        return finalize_check_authorized(asserted);
+    }
+    async function finalize_check_authorized(public asserted: address){
+        let is_caller_authorized: bool = (
+            operators
+                .get_or_use(caller, false)
+                .xor(caller == initial_authorized)
+        );
+        assert(is_caller_authorized);
     }
 }

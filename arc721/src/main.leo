@@ -7,7 +7,7 @@ To discuss:
       + [u128; 4]: 252bits
       + [field; 4] 128bits
 
-2.  
+2.
 */
 
 import authority.aleo;
