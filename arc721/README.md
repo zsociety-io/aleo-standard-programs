@@ -66,7 +66,7 @@ const all_nft_data = {
 
 To implement a marketplace keeping lister address private, **`transfer_private_to_public`** is necessary. As using **`convert_private_to_public`** followed by **`transfer_public`** would compromise lister address.
 
-> ### Question #6
+> ### Question #5
 >
 > Should we update **`convert_private_to_public`** to  **`transfer_private_to_public`** with an additional **`to (address)`** argument?
 
@@ -74,11 +74,11 @@ To implement a marketplace keeping lister address private, **`transfer_private_t
 
 For NFT with public owner, data obfuscation can currently be achieved using a random edition scalar, although:
 
-> ### Question #7
+> ### Question #6
 >
 > With the current standard, for  publicly owned NFTs, how are wallets/dApps supposed to know the NFT data and edition if it was never shared offchain?
 
-> ### Question #8
+> ### Question #7
 >
 > Should we Integrate to **`transfer_public`** an output record containing NFT data like the following?
 
@@ -124,7 +124,7 @@ async function finalize_transfer_public(
 }
 ```
 
-> ### Question #9
+> ### Question #8
 >
 > Should we include in the standard the possibility of (a subset of?) the data being made public using specific transitions ?
 
@@ -150,7 +150,7 @@ If it's just a subset can be made public this means only some onchain attributes
 >
 > Should this be included in a mapping for ease of use for DApp/wallets?
 
-> ### Question #11
+> ### Question #10
 >
 > Should we Integrate a transition to obfuscate back again the NFT data by updating the edition as the following?
 
