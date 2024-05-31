@@ -6,7 +6,7 @@
 */
 
 program authority.aleo {
-    const initial_authorized: address = aleo1wamjqlka7d0gazlxdys6n8e8zeee3ymedwvw8elvh7529kwd45rq0plgax;
+    const initial_authorized: address = mint.aleo;
 
     // caller => (authorized xor is_caller_initial_authorized)
     mapping operators: address => bool;
@@ -36,9 +36,10 @@ program authority.aleo {
     }
 
     async transition check_authorized(public asserted: address) -> Future {
-        return finalize_check_authorized(asserted);
+        let caller: address = self.caller;
+        return finalize_check_authorized(asserted, caller);
     }
-    async function finalize_check_authorized(public asserted: address){
+    async function finalize_check_authorized(public asserted: address, public caller: address){
         let is_caller_authorized: bool = (
             operators
                 .get_or_use(caller, false)
