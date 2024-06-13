@@ -1,34 +1,63 @@
-// The 'arc721' program.
-
 /*
-To discuss:
-1.  For data attribute, why not use [field; 4] instead of [u128; 4].
-    Same constraints, (ex: 12 for hard coded equality assertion), but:
-      + [u128; 4]: 252bits
-      + [field; 4] 128bits
 
-2.
+    NFTs with public/private data and public/private owner.
+
 */
-
-import authority.aleo;
-import royalty.aleo;
 
 
 program arc721.aleo {
-    record NFT {
-        owner: address,
-        data: [u128; 4],
-        edition: scalar,
-    }
-
     struct approval {
         approver: address,
         spender: address,
     }
 
+    struct data {
+        metadata: [field; 4], // URL of offchain metadata JSON
+        // (optional) name: string,
+        // (optional) image: string, // URL of image
+        // (optional) attributes: [attribute; 4],
+        // (optional) ...
+    }
+
+    record NFT {
+        private owner: address,
+        private data: data,
+        private edition: scalar,
+    }
+
+    record NFTView {
+        private owner: address,
+        private data: data,
+        private edition: scalar,
+    }
+
+    record NFTPublicView {
+        public owner: address,
+        public nft_commit: field,
+        public data: data,
+    }
+
     mapping nft_owners: field => address;
-    mapping for_all_approvals: field => bool; // approval hash => approved
-    mapping nft_approvals: field => field; // token commit => approval hash
+    // approval nft_commit => address
+
+    mapping for_all_approvals: field => bool; 
+    // approval hash => approved
+
+    mapping nft_approvals: field => field; 
+    // nft commit => approval hash
+
+    mapping nfts: field => bool; 
+    // nft commit => exists (should be set on NFT mint / edition change)
+
+
+    inline commit_nft(
+        nft_data: data,
+        nft_edition: scalar
+    ) -> field {
+        let data_hash: field = BHP256::hash_to_field(nft_data);
+        let commitment: field = BHP256::commit_to_field(data_hash, nft_edition);
+        return commitment;
+    }
 
 
     transition transfer_private(
@@ -42,84 +71,95 @@ program arc721.aleo {
         };
     }
     
-    
+
     async transition transfer_private_to_public(
         private nft: NFT,
         public to: address,
-    ) -> Future {
-        let data_hash: field = BHP256::hash_to_field(nft.data);
-        let token_commit: field = BHP256::commit_to_field(
-            data_hash, nft.edition
-        );
-        return finalize_transfer_private_to_public(
-             to, token_commit,
+    ) -> (NFTView, Future) {
+        let nft_commit: field = commit_nft(nft.data, nft.edition);
+
+        let nft_view: NFTView = NFTView {
+            owner: to,
+            data: nft.data,
+            edition: nft.edition,
+        };
+        let transfer_private_to_public_future: Future =
+            finalize_transfer_private_to_public(
+                to, nft_commit
+            );
+        return (
+            nft_view,
+            transfer_private_to_public_future
         );
     }
     async function finalize_transfer_private_to_public(
-        public to: address,
-        public token_commit: field,
+        to: address,
+        nft_commit: field,
     ){
         nft_owners.set(
-            token_commit,
+            nft_commit,
             to,
         );
     }
 
 
     async transition transfer_public(
-        public data: [u128; 4],
-        public edition: scalar,
+        private nft_data: data,
+        private nft_edition: scalar,
         public to: address,
-    ) -> Future {
-        let data_hash: field = BHP256::hash_to_field(data);
-        let token_commit: field = BHP256::commit_to_field(
-            data_hash, edition
-        );
+    ) -> (NFTView, Future) {
+        let nft_commit: field = commit_nft(nft_data, nft_edition);
         let caller: address = self.caller;
-        return finalize_transfer_public(
-             to, token_commit, caller,
+        let nft_view: NFTView = NFTView {
+            owner: to,
+            data: nft_data,
+            edition: nft_edition,
+        };
+        let transfer_public_future: Future = finalize_transfer_public(
+             to, nft_commit, caller,
+        );
+        return (
+            nft_view,
+            transfer_public_future
         );
     }
     async function finalize_transfer_public(
-        public to: address,
-        public token_commit: field,
-        public caller: address,
+        to: address,
+        nft_commit: field,
+        caller: address,
     ) {
-        let owner: address = nft_owners.get(token_commit);
+        let owner: address = nft_owners.get(nft_commit);
         assert_eq(caller, owner);
-        nft_approvals.remove(token_commit);
-        nft_owners.set(token_commit, to);
+        nft_approvals.remove(nft_commit);
+        nft_owners.set(nft_commit, to);
     }
 
 
     async transition transfer_public_to_private(
-        public data: [u128; 4],
-        public edition: scalar,
+        private nft_data: data,
+        private nft_edition: scalar,
         private to: address,
     ) -> (NFT, Future) {
-        let data_hash: field = BHP256::hash_to_field(data);
-        let token_commit: field = BHP256::commit_to_field(
-            data_hash, edition
-        );
+        let nft_commit: field = commit_nft(nft_data, nft_edition);
         let caller: address = self.caller;
         let finalize_future: Future = finalize_transfer_public_to_private(
-            caller, token_commit,
+            caller, nft_commit,
         );
         let received_nft: NFT = NFT {
             owner: to,
-            data: data,
-            edition: edition,
+            data: nft_data,
+            edition: nft_edition,
         };
         return (received_nft, finalize_future);
     }
     async function finalize_transfer_public_to_private(
-        public caller: address,
-        public token_commit: field,
+        caller: address,
+        nft_commit: field,
     ){
-        let owner: address = nft_owners.get(token_commit);
+        let owner: address = nft_owners.get(nft_commit);
         assert_eq(caller, owner);
-        nft_approvals.remove(token_commit);
-        nft_owners.remove(token_commit);
+        nft_approvals.remove(nft_commit);
+        nft_owners.remove(nft_commit);
     }
 
 
@@ -137,8 +177,8 @@ program arc721.aleo {
         );
     }
     async function finalize_set_for_all_approval(
-        public apvl_hash: field,
-        public new_value: bool,
+        apvl_hash: field,
+        new_value: bool,
     ){
         for_all_approvals.set(apvl_hash, new_value);
     }
@@ -146,13 +186,10 @@ program arc721.aleo {
     
     async transition approve_public(
         private spender: address,
-        private data: [u128; 4],
-        private edition: scalar,
+        private nft_data: data,
+        private nft_edition: scalar,
     ) -> Future {
-        let data_hash: field = BHP256::hash_to_field(data);
-        let token_commit: field = BHP256::commit_to_field(
-            data_hash, edition
-        );
+        let nft_commit: field = commit_nft(nft_data, nft_edition);
 
         let apvl: approval = approval {
             approver: self.caller,
@@ -160,55 +197,120 @@ program arc721.aleo {
         };
         let apvl_hash: field = BHP256::hash_to_field(apvl);
         return finalize_approve_public(
-            self.caller, apvl_hash, token_commit,
+            self.caller, apvl_hash, nft_commit,
         );
     }
     async function finalize_approve_public(
-        public caller: address,
-        public apvl_hash: field,
-        public token_commit: field,
+        caller: address,
+        apvl_hash: field,
+        nft_commit: field,
     ){
-        let owner: address = nft_owners.get(token_commit);
+        let owner: address = nft_owners.get(nft_commit);
         assert_eq(owner, caller);
-        nft_approvals.set(token_commit, apvl_hash);
+        nft_approvals.set(nft_commit, apvl_hash);
     }
 
 
     async transition transfer_from_public(
         public from: address,
         public to: address,
-        private data: [u128; 4],
-        private edition: scalar,
-    ) -> Future {
-        let data_hash: field = BHP256::hash_to_field(data);
-        let token_commit: field = BHP256::commit_to_field(
-            data_hash, edition
-        );
+        private nft_data: data,
+        private nft_edition: scalar,
+    ) -> (NFTView, Future) {
+        let nft_commit: field = commit_nft(nft_data, nft_edition);
+
+        let nft_view: NFTView = NFTView {
+            owner: to,
+            data: nft_data,
+            edition: nft_edition,
+        };
 
         let apvl: approval = approval {
             approver: from,
             spender: self.caller,
         };
         let apvl_hash: field = BHP256::hash_to_field(apvl);
-        return finalize_transfer_from_public(
-             apvl_hash, from, to, token_commit,
+
+        let transfer_from_public_future: Future =
+            finalize_transfer_from_public(
+                apvl_hash, from, to, nft_commit,
+            );
+        return (
+            nft_view,
+            transfer_from_public_future
         );
     }
     async function finalize_transfer_from_public(
-        public apvl_hash: field,
-        public from: address,
-        public to: address,
-        public token_commit: field,
+        apvl_hash: field,
+        from: address,
+        to: address,
+        nft_commit: field,
     ) {
         assert(
-            nft_approvals.contains(token_commit)
+            nft_approvals.contains(nft_commit)
             || for_all_approvals.get_or_use(apvl_hash, false)
         );
 
-        let owner: address = nft_owners.get(token_commit);
+        let owner: address = nft_owners.get(nft_commit);
         assert_eq(from, owner);
         
-        nft_approvals.remove(token_commit);
-        nft_owners.set(token_commit, to);
+        nft_approvals.remove(nft_commit);
+        nft_owners.set(nft_commit, to);
     }
+
+
+    async transition update_edition_private(
+        private nft: NFT,
+        private new_edition: scalar,
+    ) -> (NFT, Future) {
+        let out_nft: NFT = NFT {
+            owner: nft.owner,
+            data: nft.data,
+            edition: new_edition,
+        };
+        let nft_commit: field = commit_nft(nft.data, new_edition);
+
+        let update_edition_private_future: Future = finalize_update_edition_private(
+            nft_commit
+        );
+        return (out_nft, update_edition_private_future);
+    }
+    async function finalize_update_edition_private(
+        nft_commit: field,
+    ) {
+        assert(nfts.contains(nft_commit).not());
+    }
+
+
+    async transition update_edition_public(
+        private nft_data: data,
+        private nft_edition: scalar,
+        private new_nft_edition: scalar,
+    ) -> (NFTView, Future) {
+        let nft_view: NFTView = NFTView {
+            owner: self.caller,
+            data: nft_data,
+            edition: new_nft_edition,
+        };
+        let nft_commit: field = commit_nft(nft_data, nft_edition);
+        let new_nft_commit: field = commit_nft(nft_data, new_nft_edition);
+        let update_edition_public_future: Future = finalize_update_edition_public(
+            nft_commit,
+            new_nft_commit,
+            self.caller
+        );
+        return (nft_view, update_edition_public_future);
+    }
+    async function finalize_update_edition_public(
+        nft_commit: field,
+        new_nft_commit: field,
+        caller: address
+    ) {
+        assert_eq(caller, nft_owners.get(nft_commit));
+        assert(nfts.contains(new_nft_commit).not());
+        nfts.remove(nft_commit);
+        nft_owners.remove(nft_commit);
+        nft_owners.set(new_nft_commit, caller);
+    }
+
 }
