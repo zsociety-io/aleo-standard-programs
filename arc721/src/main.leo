@@ -31,12 +31,6 @@ program arc721.aleo {
         private edition: scalar,
     }
 
-    record NFTPublicView {
-        public owner: address,
-        public nft_commit: field,
-        public data: data,
-    }
-
     mapping nft_owners: field => address;
     // approval nft_commit => address
 
@@ -279,38 +273,77 @@ program arc721.aleo {
         nft_commit: field,
     ) {
         assert(nfts.contains(nft_commit).not());
+        nfts.set(nft_commit, true);
     }
 
 
-    async transition update_edition_public(
+
+    // --- ONLY for collections with partially publicizable data ---
+
+    // subset of data that can be made public
+    struct publicizable_data {
+        metadata: [field; 4],
+    }
+
+    mapping nft_public_data: field => publicizable_data; 
+
+    async transition publish_publicizable_data(
         private nft_data: data,
         private nft_edition: scalar,
-        private new_nft_edition: scalar,
-    ) -> (NFTView, Future) {
-        let nft_view: NFTView = NFTView {
-            owner: self.caller,
-            data: nft_data,
-            edition: new_nft_edition,
-        };
+    ) -> Future {
         let nft_commit: field = commit_nft(nft_data, nft_edition);
-        let new_nft_commit: field = commit_nft(nft_data, new_nft_edition);
-        let update_edition_public_future: Future = finalize_update_edition_public(
+        let public_data: publicizable_data = publicizable_data {
+            metadata: nft_data.metadata
+        };
+        let publish_data_future: Future = finalize_publish_publicizable_data(
             nft_commit,
-            new_nft_commit,
-            self.caller
+            public_data,
         );
-        return (nft_view, update_edition_public_future);
+        return publish_data_future;
     }
-    async function finalize_update_edition_public(
+    async function finalize_publish_publicizable_data(
         nft_commit: field,
-        new_nft_commit: field,
-        caller: address
+        public_data: publicizable_data,
     ) {
-        assert_eq(caller, nft_owners.get(nft_commit));
-        assert(nfts.contains(new_nft_commit).not());
-        nfts.remove(nft_commit);
-        nft_owners.remove(nft_commit);
-        nft_owners.set(new_nft_commit, caller);
+        nft_public_data.set(nft_commit, public_data);
     }
+
+
+    /*
+    // ONLY for collections with entirely publicizable data:
+
+    struct publicizable_data {
+        data: data,
+        edition: scalar
+    }
+
+    mapping nft_public_data: field => publicizable_data; 
+
+
+    async transition publish_publicizable_data(
+        public nft_data: data,
+        public nft_edition: scalar,
+    ) -> Future {
+        let nft_commit: field = commit_nft(nft_data, nft_edition);
+        let publish_publicizable_data_future: Future = finalize_publish_publicizable_data(
+            nft_commit,
+            nft_data,
+            nft_edition,
+        );
+        return publish_publicizable_data_future;
+    }
+    async function finalize_publish_publicizable_data(
+        nft_commit: field,
+        nft_data: data,
+        nft_edition: scalar,
+    ) {
+        let public_data: publicizable_data = publicizable_data {
+            data: nft_data,
+            edition: nft_edition
+        };
+        nft_public_data.set(nft_commit, public_data);
+    }
+
+    */
 
 }
