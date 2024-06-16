@@ -5,7 +5,7 @@
 */
 
 
-program arc721.aleo {
+program arc721_example.aleo {
     struct approval {
         approver: address,
         spender: address,
@@ -40,7 +40,7 @@ program arc721.aleo {
     mapping nft_approvals: field => field; 
     // nft commit => approval hash
 
-    mapping nfts: field => bool; 
+    mapping nft_commits: field => bool; 
     // nft commit => exists (should be set on NFT mint / edition change)
 
 
@@ -272,12 +272,12 @@ program arc721.aleo {
     async function finalize_update_edition_private(
         nft_commit: field,
     ) {
-        assert(nfts.contains(nft_commit).not());
-        nfts.set(nft_commit, true);
+        assert(nft_commits.contains(nft_commit).not());
+        nft_commits.set(nft_commit, true);
     }
 
 
-
+    /*
     // --- ONLY for collections with partially publicizable data ---
 
     // subset of data that can be made public
@@ -307,6 +307,7 @@ program arc721.aleo {
     ) {
         nft_public_data.set(nft_commit, public_data);
     }
+    */
 
 
     /*
@@ -318,7 +319,6 @@ program arc721.aleo {
     }
 
     mapping nft_public_data: field => publicizable_data; 
-
 
     async transition publish_publicizable_data(
         public nft_data: data,
