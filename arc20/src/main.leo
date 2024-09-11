@@ -161,7 +161,7 @@ program arc20.aleo {
     async function finalize_transfer_private_to_public(
         receiver: address, amount: u64,
     ) {
-        let to_balance: u64 = account.get(receiver);
+        let to_balance: u64 = account.get_or_use(receiver, 0u64);
         to_balance += amount;
         account.set(receiver, to_balance);
     }
