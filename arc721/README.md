@@ -23,7 +23,7 @@ For more general proof usecases, like proving your age, having some of the metad
 ```rust
 struct attribute {
     trait_type: string,
-    value: string,
+    _value: string,
 }
 
 struct data {
@@ -83,7 +83,7 @@ For NFT with public owner, data obfuscation can currently be achieved using a ra
 > Should we Integrate to **`transfer_public`** an output record containing NFT data like the following?
 
 ```rust
-record NFTData {
+record NFTView {
     private owner: address,
     private data: data, // or field (hash of data)
     private edition: scalar,
@@ -93,7 +93,7 @@ async transition transfer_public(
     public data: [u128; 4],
     public edition: scalar,
     public to: address,
-) -> (Future, NFTData) {
+) -> (Future, NFTView) {
     let data_hash: field = BHP256::hash_to_field(data);
     let token_commit: field = BHP256::commit_to_field(
         data_hash, edition
@@ -102,7 +102,7 @@ async transition transfer_public(
     let transfer_public_future: Future = finalize_transfer_public(
             to, token_commit, caller,
     );
-    let nft_data: NFTData = NFTData {
+    let nft_data: NFTView = NFTView {
         owner: to
         data: data,
         edition: scalar,
