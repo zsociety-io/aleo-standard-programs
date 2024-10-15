@@ -1,170 +1,387 @@
-# New ARC0721 discussion
+# ARC-0721
+**Title:** Aleo Non-Fungible Token Standard
+**Authors:** Pierre
+**Discussion:** ARC-0721 Aleo Non-Fungible Token Standard
+**Topic:** Application
+**Status:** Draft
+**Created:** 2024-10-14
 
-### 1. Strings
+## Abstract
 
-Both **`array`** and **`struct`** usage involve the same amount of constraints.
+Several NFT standards have already been proposed on Aleo. This proposal aims at reconciling these approaches to allow the broadest range of use cases made possible by Aleo’s unique privacy features.
 
-> #### Question #1
->
-> Should we use array representation for strings instead of struct?
+Compared to NFTs on public ledgers like Ethereum, Aleo NFTs can independently have:
 
-Both **`field`** and **`u128`** involve the same amount of constraints but fields can store roughly **`252 bits`** instead of **`128`**.
+- Private or public token owner visibility.
+- Private or public data associated the token.
 
-> #### Question #2
->
-> Should we use **`[field; 4]`** instead of **`[u128; 4]`** ?
+Both of those features have implications on feasibility of building applications involving NFTs as a marketplaces, escrow programs… This proposal aims to integrate those features on top of the previous standard proposals while keeping those applications possible.
 
-For what follows strings will be represented by symbol: **`string`**.
+Example: 
 
-### 2. Onchain Metadata
+- Domain Names - Human-readable names that resolve addresses in the [Aleo Name Service contract](https://github.com/S-T-Soft/aleo-name-service-contract).
+- Royalty NFTs - Tradable assets which utility is to claim creator or marketplace royalty fees.
+- IOU NFTs - Tradable assets allowing to claim due fungible tokens in a lending agreement, including private loan data.
 
-For more general proof usecases, like proving your age, having some of the metadata accessible directly onchain might be necessary.
+[The complete code for the standard is available here.](https://github.com/zsolutions-io/aleo-standard-programs/blob/main/arc721/src/main.leo)
+
+## Motivations
+
+### On-chain vs Off-chain data
+
+The proposed standard allows for NFT data to be on-chain, off-chain or a combination of both. Off-chain to reduce the storage fees on the network. On-chain to leverage the possibility of using this data as input/outputs of zk-circuits.
+
+Remark: On-chain data can either consists of a hash of some data or be the data itself directly depending on the use case’s requirement of guarantying access to the data transactionally.
+
+### Token Registry
+
+Because current version of SnarkOS/SnarkVM does not support dynamic contract calls, why not use the same approach as for fungible tokens and make a NFT registry program?
+
+The reason is to support arbitrary on-chain data structure for NFTs. For instance, even if using a NFT registry where hash of arbitrary data is stored for each NFT, you would still have to deploy one marketplace program for each collection anyway, to guaranty transactional disclosure of private on-chain data to the buyer.
+
+## Specifications
+
+A NFT collection is defined as a program implementing the following specifications.
+
+### Strings
+
+As NFTs heavily rely on the use of strings, either for URL to off-chain data or for data itself, they require to standardize encoding of strings into Aleo plaintexts:
+
+```rust
+// Leo
+string: [field; 4],
+```
+
+```rust
+// Aleo instructions
+string as [field; 4u32];
+```
+
+Length of the array can be freely adapted to match the maximum amount of characters required by the collection.
+
+The choice of fields type is motivated by the fact that they offer close to twice the amount of data for the same constraints as u128. An array of u8, while making application more readable, is even less optimal.
+
+This specification for strings is compatible with ARC21 standard for name and symbol of fungible tokens.
+
+[Here is a Javascript example of convertions between js string and aleo plaintext.](https://github.com/zsolutions-io/aleo-standard-programs/blob/main/arc721/utils/strings.js)
+
+### Data Structure
+
+The data stored within a NFT has the following structure:
 
 ```rust
 struct attribute {
-    trait_type: string,
-    _value: string,
+    trait_type: [field; 4],
+    _value: [field; 4],
 }
 
 struct data {
-    metadata: string, // URL of offchain metadata JSON
-    (optional) name: string,
-    (optional) image: string, // URL of image
-    (optional) attributes: [attribute; 4],
+    metadata: [field; 4], // URI of offchain metadata JSON
+    // (optional) name: [field; 4],
+    // (optional) image: [field; 16],
+    // (optional) attributes: [attribute; 4],
     // (optional) ...
 }
+```
 
+An example of such an off-chain metadata JSON can be found [here](https://aleo-public.s3.us-west-2.amazonaws.com/testnet3/privacy-pride/1.json).
+
+Name of the structs don’t necessarily have to match ‘data’ and a’ttribute’, allowing to import several NFT collection program without shadowing. Although, the name of each struct attribute is enforced by the standard. Aleo reserved keywords should be prefixed with an underscore character (as for ‘_value’).
+
+To get the complete data for a NFT, off-chain and on-chain data can simply be merged, for instance in javascript:
+
+```jsx
+const nft_data = {
+    ...await (await fetch(nft.data.metadata)).json(),
+    ...nft.data, // on-chain data overrides off-chain data
+}
+```
+
+### Private Data and Ownership
+
+As for ARC20-21 tokens, privacy of NFT owner is achieved by representing the token as an Aleo record. It also allows the data of an NFT to remain private, by including it as a private attribute of the record.
+
+Although, to enforce uniqueness, a public identifier for the NFT is necessary. Simply using a hash of the data would introduce 2 problems:
+
+- Two NFTs could not share the same data.
+- It would disclose some knowledge about the data: verifying that some data matches would be an instantaneous operation.
+
+For these reasons, we include in the NFT record a scalar element, called edition:
+
+```rust
 record NFT {
     private owner: address,
-    private data: data, // or field (hash of data)
+    private data: data,
     private edition: scalar,
 }
 ```
 
-Offchain metadata JSON could include all [the remaining metadata object fields](https://aleo-public.s3.us-west-2.amazonaws.com/testnet3/privacy-pride/1.json).
+We define the public identifier for the NFT as the commit of its edition to the hash of its data:
 
-Then they could be merged, for instance in javascript:
-
-```typescript
-const all_nft_data = {
-    ...await (await fetch(nft.data.metadata)).json(),
-    ...nft.data,
+```rust
+inline commit_nft(
+    nft_data: data,
+    nft_edition: scalar
+) -> field {
+    let data_hash: field = BHP256::hash_to_field(nft_data);
+    let nft_commit: field = BHP256::commit_to_field(data_hash, nft_edition);
+    return nft_commit;
 }
 ```
 
-> ### Question #3
->
-> Do you see another way to have some NFT attributes onchain?
+This “NFT commit” does not disclose any information on the NFT data as long as the edition obfuscator is chosen uniformly randomly in the scalar field.
 
-> ### Question #4
->
-> If this is the standard, should data be hashed or put directly put into data attribute of the NFT record?
->
->
+The following mapping serves to enforce the uniqueness of “NFT commit” identifiers:
 
-### 3. Public/private NFT owner
+```rust
+mapping nft_commits: field => bool;
+// NFT commit => NFT exists or has existed
+```
 
-To implement a marketplace keeping lister address private, **`transfer_private_to_public`** is necessary. As using **`convert_private_to_public`** followed by **`transfer_public`** would compromise lister address.
+### Public Ownership
 
-> ### Question #5
->
-> Should we update **`convert_private_to_public`** to  **`transfer_private_to_public`** with an additional **`to (address)`** argument?
+Apart from guarantying non-fungibility, NFT commit also allows to make the owner of the NFT public, while keeping its data private.
 
-### 4. Public/private NFT data
+This is a key feature on Aleo because it allows program to own NFTs without revealing their data, as programs cannot spend records.
 
-For NFT with public owner, data obfuscation can currently be achieved using a random edition scalar, although:
+The same as for ARC20-21 tokens, an NFT owner can be made public by mapping NFT commit to said owner:
 
-> ### Question #6
->
-> With the current standard, for  publicly owned NFTs, how are wallets/dApps supposed to know the NFT data and edition if it was never shared offchain?
+```rust
+mapping nft_owners: field => address;
+// NFT commit => NFT owner
+```
 
-> ### Question #7
->
-> Should we Integrate to **`transfer_public`** an output record containing NFT data like the following?
+Although it raises a challenging question, if user A is the private owner of a NFT, and transfers ownership to a public owner user B, how can user B know the actual data behind the public NFT commit.
+
+The proposed solution is to include another record, `NFTView`, defined as:
 
 ```rust
 record NFTView {
     private owner: address,
-    private data: data, // or field (hash of data)
+    private data: data,
     private edition: scalar,
-}
-
-async transition transfer_public(
-    public data: [u128; 4],
-    public edition: scalar,
-    public to: address,
-) -> (Future, NFTView) {
-    let data_hash: field = BHP256::hash_to_field(data);
-    let token_commit: field = BHP256::commit_to_field(
-        data_hash, edition
-    );
-    let caller: address = self.caller;
-    let transfer_public_future: Future = finalize_transfer_public(
-            to, token_commit, caller,
-    );
-    let nft_data: NFTView = NFTView {
-        owner: to
-        data: data,
-        edition: scalar,
-    }
-    return (
-        transfer_public_future,
-        nft_data
-    );
-}
-async function finalize_transfer_public(
-    public to: address,
-    public token_commit: field,
-    public caller: address,
-) {
-    let owner: address = nft_owners.get(token_commit);
-    assert_eq(caller, owner);
-    nft_approvals.remove(token_commit);
-    nft_owners.set(token_commit, to);
+    private is_view: bool
 }
 ```
 
-> ### Question #8
->
-> Should we include in the standard the possibility of (a subset of?) the data being made public using specific transitions ?
+This record don’t represent private ownership of the NFT, but is a vehicle for the NFT data and is minted to the public receiver of transfers along with NFT ownership.
+
+The conversion from private to public owner can then be implemented as follow:
 
 ```rust
-transition publish_data_private(
+async transition transfer_private_to_public(
     private nft: NFT,
-) -> (NFT, public data, public scalar) {
-    return (
-        NFT {
-            owner: to,
-            data: nft.data,
-            edition: nft.scalar,
-        },
-        nft.data,
-        nft.scalar
-    );
-}
-```
-
-If it's just a subset can be made public this means only some onchain attributes should be made public (lets call them publicizable attributes ?).
-
-> ### Question #9
->
-> Should this be included in a mapping for ease of use for DApp/wallets?
-
-> ### Question #10
->
-> Should we Integrate a transition to obfuscate back again the NFT data by updating the edition as the following?
-
-```rust
-transition update_edition_private(
-    private nft: NFT,
-    private edition: scalar,
-) -> NFT {
-    return NFT {
+    public to: address,
+) -> (NFTView, Future) {
+    let nft_commit: field = commit_nft(nft.data, nft.edition);
+    let nft_view: NFTView = NFTView {
         owner: to,
         data: nft.data,
-        edition: scalar,
+        edition: nft.edition,
+        is_view: true
     };
+    let transfer_private_to_public_future: Future =
+        finalize_transfer_private_to_public(
+            to, nft_commit
+        );
+    return (
+        nft_view,
+        transfer_private_to_public_future
+    );
+}
+async function finalize_transfer_private_to_public(
+    to: address,
+    nft_commit: field,
+){
+    nft_owners.set(
+        nft_commit,
+        to
+    );
 }
 ```
 
-This allows to change the NFT identifier (tokenEditionHash or token_commit).
+Remark: `is_view` is always true, and is here just for differentiating `NFTView` from `NFT` in plaintext representations of records.
+
+An ultimate problem remains: what if the public receiver of a transfer is a program? Then NFTView doesn’t help.
+
+To illustrate this problem, let’s imagine we are trying to create a marketplace program. A seller lists the NFT using `transfer_private_to_public`. A buyer then accepts the listing and should receive automatically receive the data corresponding to the NFT. On way to do this, could be to have the seller come back, to disclose the private data to withdraw payment. 
+
+This back and forth between the buyer and the seller makes the user experience a lot worth than on traditional NFT marketplaces. Hence the need for a mechanism allowing Aleo programs to store private data and disclose it programmatically. An attempt at contributing solving this problem is [Aleo DCP](https://github.com/zsolutions-io/aleo-dcp), where data is splitted according to a MPC protocol. Here is an [example NFT marketplace program](https://github.com/zsolutions-io/aleo-dcp/blob/main/examples/nft_marketplace/programs/marketplace_example/src/main.leo) with the same “one click buy” user experience as with traditional marketplaces, by leveraging Aleo DCP.
+
+Remark: These last considerations are only relevant to NFTs data that should always remain private.
+
+### Public Data
+
+For collections where data can become public, “publishable collections”, the following mapping and function should be included to tackle the problem stated in last section:
+
+```rust
+struct nft_content {
+    data: data,
+    edition: scalar
+}
+
+mapping nft_contents: field => nft_content; 
+
+async transition publish_nft_content(
+    public nft_data: data,
+    public nft_edition: scalar,
+) -> Future {
+    let nft_commit: field = commit_nft(nft_data, nft_edition);
+    let publish_nft_content_future: Future = finalize_publish_nft_content(
+        nft_commit,
+        nft_data,
+        nft_edition,
+    );
+    return publish_nft_content_future;
+}
+async function finalize_publish_nft_content(
+    nft_commit: field,
+    nft_data: data,
+    nft_edition: scalar,
+) {
+    let public_data: nft_content = nft_content {
+        data: nft_data,
+        edition: nft_edition
+    };
+    nft_contents.set(nft_commit, public_data);
+}
+```
+
+`publish_nft_content` can then be called along with transfers to a program, for instace in marketplace program on listing.
+
+### Re-obfuscation
+
+If a NFT content has been published once, the only way to re-obfuscate it is to transfer it to private again, then use the following function to update the edition, hence the commit of the NFT.
+
+```rust
+async transition update_edition_private(
+    private nft: NFT,
+    private new_edition: scalar,
+) -> (NFT, Future) {
+    let out_nft: NFT = NFT {
+        owner: nft.owner,
+        data: nft.data,
+        edition: new_edition,
+    };
+    let nft_commit: field = commit_nft(nft.data, new_edition);
+
+    let update_edition_private_future: Future = finalize_update_edition_private(
+        nft_commit
+    );
+    return (out_nft, update_edition_private_future);
+}
+async function finalize_update_edition_private(
+    nft_commit: field,
+) {
+    assert(nft_commits.contains(nft_commit).not());
+    nft_commits.set(nft_commit, true);
+}
+```
+
+Previous commit is not removed from `nft_commits` mapping, as it would reveal the previous commit and the new one represent the same data.
+
+### Approvals
+
+As for ARC20 tokens, the standard features an approval mechanism allowing accounts to approve another account to spend their token. It can be a specific asset, or any asset from the collection.
+
+```rust
+struct approval {
+    approver: address,
+    spender: address
+}
+
+mapping for_all_approvals: field => bool; 
+// Approval hash => Is approved
+
+mapping nft_approvals: field => field;
+// NFT commit => Approval hash
+
+async transition set_for_all_approval(
+    private spender: address,
+    public new_value: bool,
+) -> Future {
+    let apvl: approval = approval {
+        approver: self.caller,
+        spender: spender,
+    };
+    let apvl_hash: field = BHP256::hash_to_field(apvl);
+    return finalize_set_for_all_approval(
+        apvl_hash, new_value
+    );
+}
+async function finalize_set_for_all_approval(
+    apvl_hash: field,
+    new_value: bool,
+){
+    for_all_approvals.set(apvl_hash, new_value);
+}
+
+async transition approve_public(
+    private spender: address,
+    private nft_data: data,
+    private nft_edition: scalar,
+) -> Future {
+    let nft_commit: field = commit_nft(nft_data, nft_edition);
+
+    let apvl: approval = approval {
+        approver: self.caller,
+        spender: spender,
+    };
+    let apvl_hash: field = BHP256::hash_to_field(apvl);
+    return finalize_approve_public(
+        self.caller, apvl_hash, nft_commit,
+    );
+}
+async function finalize_approve_public(
+    caller: address,
+    apvl_hash: field,
+    nft_commit: field,
+){
+    let owner: address = nft_owners.get(nft_commit);
+    assert_eq(owner, caller);
+    nft_approvals.set(nft_commit, apvl_hash);
+}
+```
+
+Once approved, the `transfer_from_public` function can be called by the spender, to transfer a NFT from the approver to a recipient address.
+
+### Settings
+
+A mapping is responsible for the collection level settings:
+
+```rust
+mapping general_settings: u8 => field;
+// Setting index => Setting value
+```
+
+```
+    general_settings.set(0u8, 0u128); // number of mintable NFTs (all editions)
+    general_settings.set(1u8, total); // Number of total NFTs (first-editions) that can be minted
+    general_settings.set(2u8, symbol); // Symbol for the NFT
+    general_settings.set(3u8, base_uri.data0); // Base URI for NFT
+    general_settings.set(4u8, base_uri.data1);
+    general_settings.set(5u8, base_uri.data2);
+    general_settings.set(6u8, base_uri.data3);
+
+```
+
+Available settings:
+
+- **`0u8` -** Amount of mintable NFTs (all editions).
+- **`1u8` -** Number of total NFTs (first-editions) that can be minted.
+- **`2u8` -** Symbol for the NFT.
+- **`3u8` -** Base URI for NFT, part 1.
+- **`4u8` -** Base URI for NFT, part 2.
+- **`5u8` -** Base URI for NFT, part 3.
+- **`6u8` -** Base URI for NFT, part 4.
+- **`7u8` -** Admin address hash.
+
+## Reference Implementations
+
+Implementation : https://github.com/zsolutions-io/aleo-standard-programs/blob/main/arc721/src/main.leo
+
+## References
+
+https://eips.ethereum.org/EIPS/eip-721
+
+[https://github.com/demox-labs/art-factory](https://github.com/AleoNet/ARCs/discussions/36)
