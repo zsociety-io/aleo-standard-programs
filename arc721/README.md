@@ -1,10 +1,11 @@
 # ARC-0721
-**Title:** Aleo Non-Fungible Token Standard
-**Authors:** Pierre
-**Discussion:** ARC-0721 Aleo Non-Fungible Token Standard
-**Topic:** Application
-**Status:** Draft
-**Created:** 2024-10-14
+
+**Title:** Aleo Non-Fungible Token Standard<br/>
+**Authors:** Pierre<br/>
+**Discussion:** ARC-0721 Aleo Non-Fungible Token Standard<br/>
+**Topic:** Application<br/>
+**Status:** Draft<br/>
+**Created:** 2024-10-14<br/>
 
 ## Abstract
 
