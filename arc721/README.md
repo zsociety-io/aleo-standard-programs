@@ -355,17 +355,6 @@ mapping general_settings: u8 => field;
 // Setting index => Setting value
 ```
 
-```
-    general_settings.set(0u8, 0u128); // number of mintable NFTs (all editions)
-    general_settings.set(1u8, total); // Number of total NFTs (first-editions) that can be minted
-    general_settings.set(2u8, symbol); // Symbol for the NFT
-    general_settings.set(3u8, base_uri.data0); // Base URI for NFT
-    general_settings.set(4u8, base_uri.data1);
-    general_settings.set(5u8, base_uri.data2);
-    general_settings.set(6u8, base_uri.data3);
-
-```
-
 Available settings:
 
 - **`0u8` -** Amount of mintable NFTs (all editions).
