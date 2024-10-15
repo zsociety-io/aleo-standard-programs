@@ -5,7 +5,7 @@
 */
 
 
-program arc721_example.aleo {
+program arc721.aleo {
     struct approval {
         approver: address,
         spender: address,
@@ -13,8 +13,8 @@ program arc721_example.aleo {
 
     struct data {
         metadata: [field; 4], // URL of offchain metadata JSON
-        // (optional) name: string,
-        // (optional) image: string, // URL of image
+        // (optional) name: [field; 4],
+        // (optional) image: [field; 4], // URL of image
         // (optional) attributes: [attribute; 4],
         // (optional) ...
     }
@@ -29,19 +29,20 @@ program arc721_example.aleo {
         private owner: address,
         private data: data,
         private edition: scalar,
+        public is_view: bool
     }
 
+    mapping nft_commits: field => bool; 
+    // NFT commit => NFT exists or has existed
+
     mapping nft_owners: field => address;
-    // approval nft_commit => address
+    // NFT commit => NFT owner
 
     mapping for_all_approvals: field => bool; 
-    // approval hash => approved
+    // Approval hash => Is approved
 
     mapping nft_approvals: field => field; 
-    // nft commit => approval hash
-
-    mapping nft_commits: field => bool; 
-    // nft commit => exists (should be set on NFT mint / edition change)
+    // NFT commit => Approval hash
 
 
     inline commit_nft(
@@ -76,6 +77,7 @@ program arc721_example.aleo {
             owner: to,
             data: nft.data,
             edition: nft.edition,
+            is_view: true
         };
         let transfer_private_to_public_future: Future =
             finalize_transfer_private_to_public(
@@ -108,6 +110,7 @@ program arc721_example.aleo {
             owner: to,
             data: nft_data,
             edition: nft_edition,
+            is_view: true
         };
         let transfer_public_future: Future = finalize_transfer_public(
              to, nft_commit, caller,
@@ -124,6 +127,39 @@ program arc721_example.aleo {
     ) {
         let owner: address = nft_owners.get(nft_commit);
         assert_eq(caller, owner);
+        nft_approvals.remove(nft_commit);
+        nft_owners.set(nft_commit, to);
+    }
+
+
+    async transition transfer_public_as_signer(
+        private nft_data: data,
+        private nft_edition: scalar,
+        public to: address,
+    ) -> (NFTView, Future) {
+        let nft_commit: field = commit_nft(nft_data, nft_edition);
+        let signer: address = self.signer;
+        let nft_view: NFTView = NFTView {
+            owner: to,
+            data: nft_data,
+            edition: nft_edition,
+            is_view: true
+        };
+        let transfer_public_as_signer_future: Future = finalize_transfer_public_as_signer(
+             to, nft_commit, signer,
+        );
+        return (
+            nft_view,
+            transfer_public_as_signer_future
+        );
+    }
+    async function finalize_transfer_public_as_signer(
+        to: address,
+        nft_commit: field,
+        signer: address,
+    ) {
+        let owner: address = nft_owners.get(nft_commit);
+        assert_eq(signer, owner);
         nft_approvals.remove(nft_commit);
         nft_owners.set(nft_commit, to);
     }
@@ -217,6 +253,7 @@ program arc721_example.aleo {
             owner: to,
             data: nft_data,
             edition: nft_edition,
+            is_view: true
         };
 
         let apvl: approval = approval {
@@ -276,74 +313,41 @@ program arc721_example.aleo {
         nft_commits.set(nft_commit, true);
     }
 
-
+    
     /*
-    // --- ONLY for collections with partially publicizable data ---
-
-    // subset of data that can be made public
-    struct publicizable_data {
-        metadata: [field; 4],
-    }
-
-    mapping nft_public_data: field => publicizable_data; 
-
-    async transition publish_publicizable_data(
-        private nft_data: data,
-        private nft_edition: scalar,
-    ) -> Future {
-        let nft_commit: field = commit_nft(nft_data, nft_edition);
-        let public_data: publicizable_data = publicizable_data {
-            metadata: nft_data.metadata
-        };
-        let publish_data_future: Future = finalize_publish_publicizable_data(
-            nft_commit,
-            public_data,
-        );
-        return publish_data_future;
-    }
-    async function finalize_publish_publicizable_data(
-        nft_commit: field,
-        public_data: publicizable_data,
-    ) {
-        nft_public_data.set(nft_commit, public_data);
-    }
+        *********************************************************************
+        ************ Only for collections with publicizable data ************
+        *********************************************************************
     */
 
-
-    /*
-    // ONLY for collections with entirely publicizable data:
-
-    struct publicizable_data {
+    struct nft_content {
         data: data,
         edition: scalar
     }
 
-    mapping nft_public_data: field => publicizable_data; 
+    mapping nft_contents: field => nft_content; 
 
-    async transition publish_publicizable_data(
+    async transition publish_nft_content(
         public nft_data: data,
         public nft_edition: scalar,
     ) -> Future {
         let nft_commit: field = commit_nft(nft_data, nft_edition);
-        let publish_publicizable_data_future: Future = finalize_publish_publicizable_data(
+        let publish_nft_content_future: Future = finalize_publish_nft_content(
             nft_commit,
             nft_data,
             nft_edition,
         );
-        return publish_publicizable_data_future;
+        return publish_nft_content_future;
     }
-    async function finalize_publish_publicizable_data(
+    async function finalize_publish_nft_content(
         nft_commit: field,
         nft_data: data,
         nft_edition: scalar,
     ) {
-        let public_data: publicizable_data = publicizable_data {
+        let public_data: nft_content = nft_content {
             data: nft_data,
             edition: nft_edition
         };
-        nft_public_data.set(nft_commit, public_data);
+        nft_contents.set(nft_commit, public_data);
     }
-
-    */
-
 }
