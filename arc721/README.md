@@ -1,7 +1,7 @@
 # ARC-0721
 
 **Title:** Aleo Non-Fungible Token Standard<br/>
-**Authors:** Capncrunch
+**Authors:** Capncrunch<br/>
 **Discussion:** ARC-0721 Aleo Non-Fungible Token Standard<br/>
 **Topic:** Application<br/>
 **Status:** Draft<br/>
