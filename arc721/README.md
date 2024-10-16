@@ -165,7 +165,7 @@ record NFTView {
 }
 ```
 
-This record don’t represent private ownership of the NFT, but is a vehicle for the NFT data and is minted to the public receiver of transfers along with NFT ownership.
+This record doesn’t represent private ownership of the NFT, but is a vehicle for the NFT data and is minted to the public receiver of transfers along with NFT ownership.
 
 The conversion from private to public owner can then be implemented as follow:
 
@@ -205,9 +205,9 @@ Remark: `is_view` is always true, and is here just for differentiating `NFTView`
 
 An ultimate problem remains: what if the public receiver of a transfer is a program? Then NFTView doesn’t help.
 
-To illustrate this problem, let’s imagine we are trying to create a marketplace program. A seller lists the NFT using `transfer_private_to_public`. A buyer then accepts the listing and should receive automatically receive the data corresponding to the NFT. On way to do this, could be to have the seller come back, to disclose the private data to withdraw payment. 
+To illustrate this problem, let’s imagine we are trying to create a marketplace program. A seller lists the NFT using `transfer_private_to_public`. A buyer then accepts the listing and should receive automatically receive the data corresponding to the NFT. One way to do this, could be to have the seller come back, to disclose the private data to withdraw payment. 
 
-This back and forth between the buyer and the seller makes the user experience a lot worth than on traditional NFT marketplaces. Hence the need for a mechanism allowing Aleo programs to store private data and disclose it programmatically. An attempt at contributing solving this problem is [Aleo DCP](https://github.com/zsolutions-io/aleo-dcp), where data is splitted according to a MPC protocol. Here is an [example NFT marketplace program](https://github.com/zsolutions-io/aleo-dcp/blob/main/examples/nft_marketplace/programs/marketplace_example/src/main.leo) with the same “one click buy” user experience as with traditional marketplaces, by leveraging Aleo DCP.
+This back and forth between the buyer and the seller makes the user experience a lot worse than on traditional NFT marketplaces. Hence the need for a mechanism allowing Aleo programs to store private data and disclose it programmatically. An attempt at contributing solving this problem is [Aleo DCP](https://github.com/zsolutions-io/aleo-dcp), where data is splitted according to a MPC protocol. Here is an [example NFT marketplace program](https://github.com/zsolutions-io/aleo-dcp/blob/main/examples/nft_marketplace/programs/marketplace_example/src/main.leo) with the same “one click buy” user experience as with traditional marketplaces, by leveraging Aleo DCP.
 
 Remark: These last considerations are only relevant to NFTs data that should always remain private.
 
