@@ -38,7 +38,8 @@ Remark: On-chain data can either consists of a hash of some data or be the data 
 
 Because current version of SnarkOS/SnarkVM does not support dynamic contract calls, why not use the same approach as for fungible tokens and make a NFT registry program?
 
-The reason is to support arbitrary on-chain data structure for NFTs. For instance, even if using a NFT registry where hash of arbitrary data is stored for each NFT, you would still have to deploy one marketplace program for each collection anyway, to guaranty transactional disclosure of private on-chain data to the buyer.
+It is trickier than for fungible tokens though, because of the requirement to support arbitrary on-chain data structure for NFTs.
+It can be done by including in the registry's NFT record the hash of the arbitrary data struct, with an 'external autorization party' for each possible data struct. That external party program would be responsible for the transfer of the arbitrary private data. You would still have to deploy one marketplace program for each data struct anyway, to guaranty transactional disclosure of private on-chain data to the buyer.
 
 ## Specifications
 
