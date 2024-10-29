@@ -66,6 +66,7 @@ program nft_registry.aleo {
     // Collection ID => Collection Admin
 
     mapping nft_contents: field => NFTContent;
+    // commit(data, edition) => (data, edition)
 
 
     inline commit_nft(
