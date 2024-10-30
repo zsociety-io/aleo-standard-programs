@@ -1,11 +1,11 @@
 # ARC-0721
 
-**Title:** Aleo Non-Fungible Token Standard<br/>
-**Authors:** Capncrunch<br/>
-**Discussion:** ARC-0721 Aleo Non-Fungible Token Standard<br/>
-**Topic:** Application<br/>
-**Status:** Draft<br/>
-**Created:** 2024-10-14<br/>
+**Title:** Aleo Non-Fungible Token Standard
+**Authors:** Pierre-André LONG - <pa@zsociety.io>
+**Discussion:** ARC-0721 Aleo Non-Fungible Token Standard
+**Topic:** Application
+**Status:** Draft
+**Created:** 2024-10-14
 
 ## Abstract
 
@@ -18,7 +18,7 @@ Compared to NFTs on public ledgers like Ethereum, Aleo NFTs can independently ha
 
 Both of those features have implications on feasibility of building applications involving NFTs as a marketplaces, escrow programs… This proposal aims to integrate those features on top of the previous standard proposals while keeping those applications possible.
 
-Example: 
+Example:
 
 - Domain Names - Human-readable names that resolve addresses in the [Aleo Name Service contract](https://github.com/S-T-Soft/aleo-name-service-contract).
 - Royalty NFTs - Tradable assets which utility is to claim creator or marketplace royalty fees.
@@ -33,13 +33,6 @@ Example:
 The proposed standard allows for NFT data to be on-chain, off-chain or a combination of both. Off-chain to reduce the storage fees on the network. On-chain to leverage the possibility of using this data as input/outputs of zk-circuits.
 
 Remark: On-chain data can either consists of a hash of some data or be the data itself directly depending on the use case’s requirement of guarantying access to the data transactionally.
-
-### Token Registry
-
-Because current version of SnarkOS/SnarkVM does not support dynamic contract calls, why not use the same approach as for fungible tokens and make a NFT registry program?
-
-It is trickier than for fungible tokens though, because of the requirement to support arbitrary on-chain data structure for NFTs.
-It can be done by including in the registry's NFT record the hash of the arbitrary data struct, with an 'external autorization party' for each possible data struct. That external party program would be responsible for the transfer of the arbitrary private data. You would still have to deploy one marketplace program for each data struct anyway, to guaranty transactional disclosure of private on-chain data to the buyer.
 
 ## Specifications
 
@@ -206,7 +199,7 @@ Remark: `is_view` is always true, and is here just for differentiating `NFTView`
 
 An ultimate problem remains: what if the public receiver of a transfer is a program? Then NFTView doesn’t help.
 
-To illustrate this problem, let’s imagine we are trying to create a marketplace program. A seller lists the NFT using `transfer_private_to_public`. A buyer then accepts the listing and should receive automatically receive the data corresponding to the NFT. One way to do this, could be to have the seller come back, to disclose the private data to withdraw payment. 
+To illustrate this problem, let’s imagine we are trying to create a marketplace program. A seller lists the NFT using `transfer_private_to_public`. A buyer then accepts the listing and should receive automatically receive the data corresponding to the NFT. One way to do this, could be to have the seller come back, to disclose the private data to withdraw payment.
 
 This back and forth between the buyer and the seller makes the user experience a lot worse than on traditional NFT marketplaces. Hence the need for a mechanism allowing Aleo programs to store private data and disclose it programmatically. An attempt at contributing solving this problem is [Aleo DCP](https://github.com/zsolutions-io/aleo-dcp), where data is splitted according to a MPC protocol. Here is an [example NFT marketplace program](https://github.com/zsolutions-io/aleo-dcp/blob/main/examples/nft_marketplace/programs/marketplace_example/src/main.leo) with the same “one click buy” user experience as with traditional marketplaces, by leveraging Aleo DCP.
 
@@ -367,12 +360,40 @@ Available settings:
 - **`6u8` -** Base URI for NFT, part 4.
 - **`7u8` -** Admin address hash.
 
+## Suggested Improvements
+
+### NFT Registry
+
+Because current version of SnarkOS/SnarkVM does not support dynamic contract calls, the same approach as for fungible tokens of making a NFT registry program would reduce the amount of programs to deploy on the network.
+
+It is trickier than for fungible tokens though, because of the requirement to support arbitrary on-chain data structure for NFTs.
+It can be done by including in the registry's NFT record the hash of the arbitrary data struct, with an 'external autorization party' for each possible data struct. That external party program would be responsible for the transfer of the arbitrary private data. You would still have to deploy one marketplace program for each data struct anyway, to guaranty transactional disclosure of private on-chain data to the buyer.
+
+ARC-0722 is still in progress.
+
+### Settings
+
+Instead of using a mapping with one index for each setting value, we could use a cleaner metadata struct for the collection, as ARC-20/21 do.
+
+```
+struct CollectionMetadata {
+    name: u128, // should this be a field?
+    symbol: u128, // should this be a field?
+    supply: u128,
+    base_uri: [4; field],
+    max_supply: u128,
+    admin: address
+  }
+```
+
 ## Reference Implementations
 
-Implementation : https://github.com/zsolutions-io/aleo-standard-programs/blob/main/arc721/src/main.leo
+Implementation : <https://github.com/zsolutions-io/aleo-standard-programs/blob/main/arc721/src/main.leo>
 
 ## References
 
-https://eips.ethereum.org/EIPS/eip-721
+<https://eips.ethereum.org/EIPS/eip-721>
 
-[https://github.com/demox-labs/art-factory](https://github.com/AleoNet/ARCs/discussions/36)
+Especially, this work relies almost entirely on Demox Labs team previous work on Art-Factory:
+<https://github.com/AleoNet/ARCs/discussions/36>
+@fulltimemike, @evanmarshall, @JohnDonavon, @dagarcia7
