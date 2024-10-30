@@ -176,6 +176,31 @@ program nft_registry.aleo {
     }
 
 
+
+    async transition update_collection_data(
+        public collection_id: field,
+        public base_uri: [field; 4],
+        public metadata_uri: [field; 4]
+    ) -> Future {
+        let new_collection_data: CollectionMetadata = CollectionMetadata {
+            collection_id: collection_id,
+            base_uri: base_uri,
+            metadata_uri: metadata_uri
+        };
+        let update_collection_data_future: Future = 
+            finalize_update_collection_data(collection_id, self.caller, new_collection_data);
+        return update_collection_data_future;
+    }
+    async function finalize_update_collection_data(
+        collection_id: field,
+        caller: address,
+        new_collection_data: CollectionMetadata
+    ) {
+        let admin: address = collection_admins.get(collection_id);
+        assert_eq(admin, caller);
+        registered_collections.set(collection_id, new_collection_data);
+    }
+
     transition burn_authorization(authorization: Authorization) {
         assert(true);
     }

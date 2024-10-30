@@ -124,6 +124,25 @@ finalize update_admin:
 
 
 
+
+function update_collection_data:
+    input r0 as field.public;
+    input r1 as [field; 4u32].public;
+    input r2 as [field; 4u32].public;
+    cast r0 r1 r2 into r3 as CollectionMetadata;
+    async update_collection_data r0 self.caller r3 into r4;
+    output r4 as nft_registry.aleo/update_collection_data.future;
+
+finalize update_collection_data:
+    input r0 as field.public;
+    input r1 as address.public;
+    input r2 as CollectionMetadata.public;
+    get collection_admins[r0] into r3;
+    assert.eq r3 r1;
+    set r2 into registered_collections[r0];
+
+
+
 function burn_authorization:
     input r0 as Authorization.record;
     assert.eq true true;
