@@ -12,6 +12,10 @@ program nft_registry.aleo {
         metadata_uri: [field; 4]
     }
 
+    struct Data {
+        metadata: [field; 4]
+    }
+
     struct Approval {
         collection_id: field,
         approver: address,
@@ -24,14 +28,14 @@ program nft_registry.aleo {
     }
 
     struct NFTContent {
-        data: field,
+        data: Data,
         edition: scalar
     }
 
     record NFT {
         private owner: address,
         private collection_id: field,
-        private data: field,
+        private data: Data,
         private edition: scalar,
     }
 
@@ -42,7 +46,7 @@ program nft_registry.aleo {
 
     record NFTView {
         private owner: address,
-        private data: field,
+        private data: Data,
         private edition: scalar,
         public is_view: bool,
     }
@@ -70,7 +74,7 @@ program nft_registry.aleo {
 
 
     inline commit_nft(
-        nft_data: field,
+        nft_data: Data,
         nft_edition: scalar
     ) -> field {
         let data_hash: field = BHP256::hash_to_field(nft_data);
@@ -80,7 +84,7 @@ program nft_registry.aleo {
     
     inline hash_nft_id(
         collection_id: field,
-        nft_data: field,
+        nft_data: Data,
         nft_edition: scalar,
     ) -> field {
         let nft_commit: field = commit_nft(nft_data, nft_edition);
@@ -137,7 +141,7 @@ program nft_registry.aleo {
 
     async transition mint_authorization_as_signer(
         public collection_id: field,
-        private nft_data: field,
+        private nft_data: Data,
         private nft_edition: scalar,
     ) -> (Authorization, Future) {
         let authorization: Authorization = Authorization {
@@ -209,7 +213,7 @@ program nft_registry.aleo {
     async transition auth_mint_private(
         authorization: Authorization,
         private recipient: address,
-        private nft_data: field,
+        private nft_data: Data,
         private nft_edition: scalar,
     ) -> (Authorization, NFT, Future) {
         let new_authorization: Authorization = Authorization {
@@ -259,7 +263,7 @@ program nft_registry.aleo {
     async transition mint_private(
         private recipient: address,
         private collection_id: field,
-        private nft_data: field,
+        private nft_data: Data,
         private nft_edition: scalar,
     ) -> (NFT, Future) {
         let nft: NFT = NFT {
@@ -310,7 +314,7 @@ program nft_registry.aleo {
     async transition auth_mint_public(
         authorization: Authorization,
         public recipient: address,
-        private nft_data: field,
+        private nft_data: Data,
         private nft_edition: scalar,
     ) -> (NFTView, Authorization, Future) {
         let new_authorization: Authorization = Authorization {
@@ -348,7 +352,7 @@ program nft_registry.aleo {
     async transition mint_public(
         public recipient: address,
         public collection_id: field,
-        private nft_data: field,
+        private nft_data: Data,
         private nft_edition: scalar,
     ) -> (NFTView, Future) {
         let nft_view: NFTView = NFTView {
@@ -434,7 +438,7 @@ program nft_registry.aleo {
 
     async transition transfer_public(
         private collection_id: field,
-        private nft_data: field,
+        private nft_data: Data,
         private nft_edition: scalar,
         public recipient: address,
     ) -> (NFTView, Future) {
@@ -468,7 +472,7 @@ program nft_registry.aleo {
 
     async transition transfer_public_as_signer(
         private collection_id: field,
-        private nft_data: field,
+        private nft_data: Data,
         private nft_edition: scalar,
         public recipient: address,
     ) -> (NFTView, Future) {
@@ -503,7 +507,7 @@ program nft_registry.aleo {
 
     async transition transfer_public_to_private(
         private collection_id: field,
-        private nft_data: field,
+        private nft_data: Data,
         private nft_edition: scalar,
         private recipient: address,
     ) -> (NFT, Future) {
@@ -552,7 +556,7 @@ program nft_registry.aleo {
     async transition approve_public(
         private collection_id: field,
         private spender: address,
-        private nft_data: field,
+        private nft_data: Data,
         private nft_edition: scalar,
     ) -> Future {
         let nft_id_hash: field = hash_nft_id(collection_id, nft_data, nft_edition);
@@ -575,7 +579,7 @@ program nft_registry.aleo {
 
     async transition unapprove_public(
         private collection_id: field,
-        private nft_data: field,
+        private nft_data: Data,
         private nft_edition: scalar,
     ) -> Future {
         let nft_id_hash: field = hash_nft_id(collection_id, nft_data, nft_edition);
@@ -598,7 +602,7 @@ program nft_registry.aleo {
         private collection_id: field,
         public from: address,
         public recipient: address,
-        private nft_data: field,
+        private nft_data: Data,
         private nft_edition: scalar,
     ) -> (NFTView, Future) {
         let nft_id_hash: field = hash_nft_id(collection_id, nft_data, nft_edition);
@@ -667,7 +671,7 @@ program nft_registry.aleo {
 
 
     async transition publish_nft_content(
-        public nft_data: field,
+        public nft_data: Data,
         public nft_edition: scalar,
     ) -> Future {
         let nft_commit: field = commit_nft(nft_data, nft_edition);

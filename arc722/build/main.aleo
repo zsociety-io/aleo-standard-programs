@@ -5,6 +5,9 @@ struct CollectionMetadata:
     base_uri as [field; 4u32];
     metadata_uri as [field; 4u32];
 
+struct Data:
+    metadata as [field; 4u32];
+
 struct Approval:
     collection_id as field;
     approver as address;
@@ -15,13 +18,13 @@ struct NFTId:
     nft_commit as field;
 
 struct NFTContent:
-    data as field;
+    data as Data;
     edition as scalar;
 
 record NFT:
     owner as address.private;
     collection_id as field.private;
-    data as field.private;
+    data as Data.private;
     edition as scalar.private;
 
 record Authorization:
@@ -30,7 +33,7 @@ record Authorization:
 
 record NFTView:
     owner as address.private;
-    data as field.private;
+    data as Data.private;
     edition as scalar.private;
     is_view as boolean.public;
 
@@ -92,7 +95,7 @@ finalize register_collection:
 
 function mint_authorization_as_signer:
     input r0 as field.public;
-    input r1 as field.private;
+    input r1 as Data.private;
     input r2 as scalar.private;
     cast self.signer r0 into r3 as Authorization.record;
     async mint_authorization_as_signer r0 self.caller into r4;
@@ -154,7 +157,7 @@ function burn_authorization:
 function auth_mint_private:
     input r0 as Authorization.record;
     input r1 as address.private;
-    input r2 as field.private;
+    input r2 as Data.private;
     input r3 as scalar.private;
     cast r0.owner r0.collection_id into r4 as Authorization.record;
     cast r1 r0.collection_id r2 r3 into r5 as NFT.record;
@@ -189,7 +192,7 @@ function auth_burn_private:
 function mint_private:
     input r0 as address.private;
     input r1 as field.private;
-    input r2 as field.private;
+    input r2 as Data.private;
     input r3 as scalar.private;
     cast r0 r1 r2 r3 into r4 as NFT.record;
     hash.bhp256 r2 into r5 as field;
@@ -232,7 +235,7 @@ finalize burn_private:
 function auth_mint_public:
     input r0 as Authorization.record;
     input r1 as address.public;
-    input r2 as field.private;
+    input r2 as Data.private;
     input r3 as scalar.private;
     cast r0.owner r0.collection_id into r4 as Authorization.record;
     cast r1 r2 r3 true into r5 as NFTView.record;
@@ -261,7 +264,7 @@ finalize auth_mint_public:
 function mint_public:
     input r0 as address.public;
     input r1 as field.public;
-    input r2 as field.private;
+    input r2 as Data.private;
     input r3 as scalar.private;
     cast r0 r2 r3 true into r4 as NFTView.record;
     hash.bhp256 r2 into r5 as field;
@@ -320,7 +323,7 @@ finalize transfer_private_to_public:
 
 function transfer_public:
     input r0 as field.private;
-    input r1 as field.private;
+    input r1 as Data.private;
     input r2 as scalar.private;
     input r3 as address.public;
     cast r3 r1 r2 true into r4 as NFTView.record;
@@ -346,7 +349,7 @@ finalize transfer_public:
 
 function transfer_public_as_signer:
     input r0 as field.private;
-    input r1 as field.private;
+    input r1 as Data.private;
     input r2 as scalar.private;
     input r3 as address.public;
     cast r3 r1 r2 true into r4 as NFTView.record;
@@ -372,7 +375,7 @@ finalize transfer_public_as_signer:
 
 function transfer_public_to_private:
     input r0 as field.private;
-    input r1 as field.private;
+    input r1 as Data.private;
     input r2 as scalar.private;
     input r3 as address.private;
     hash.bhp256 r1 into r4 as field;
@@ -417,7 +420,7 @@ finalize set_for_all_approval:
 function approve_public:
     input r0 as field.private;
     input r1 as address.private;
-    input r2 as field.private;
+    input r2 as Data.private;
     input r3 as scalar.private;
     hash.bhp256 r2 into r4 as field;
     commit.bhp256 r4 r3 into r5 as field;
@@ -441,7 +444,7 @@ finalize approve_public:
 
 function unapprove_public:
     input r0 as field.private;
-    input r1 as field.private;
+    input r1 as Data.private;
     input r2 as scalar.private;
     hash.bhp256 r1 into r3 as field;
     commit.bhp256 r3 r2 into r4 as field;
@@ -464,7 +467,7 @@ function transfer_from_public:
     input r0 as field.private;
     input r1 as address.public;
     input r2 as address.public;
-    input r3 as field.private;
+    input r3 as Data.private;
     input r4 as scalar.private;
     hash.bhp256 r3 into r5 as field;
     commit.bhp256 r5 r4 into r6 as field;
@@ -518,7 +521,7 @@ finalize update_edition_private:
 
 
 function publish_nft_content:
-    input r0 as field.public;
+    input r0 as Data.public;
     input r1 as scalar.public;
     hash.bhp256 r0 into r2 as field;
     commit.bhp256 r2 r1 into r3 as field;
