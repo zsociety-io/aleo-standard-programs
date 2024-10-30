@@ -13,7 +13,7 @@ The Aleo NFT Registry extends ARC721 standard, defining a registry for NFTs thro
 
 Moreover, ARC722 can be implemented with any `Data` struct type, allowing abitrary on-chain NFT data.
 
-[An example implementation is available here](./src/main.leo), for:
+[An example implementation is available here](./src/main.leo), with `Data` defined as:
 
 ```rust
 struct Data {
