@@ -11,7 +11,7 @@
 
 The Aleo NFT Registry extends ARC721 standard, defining a registry for NFTs through ARC722 standard, similar to how ARC21 builds on ARC20 for fungible tokens.
 
-However it has it comes with a own that does not exist for fungible tokens, because of the requirement to support arbitrary on-chain data structure for NFTs.
+However it has it comes with a challenge that does not exist for fungible tokens, because of the requirement to support arbitrary on-chain data structure for NFTs.
 
 The proposed solution is to allow multiple registry implementing ARC722, with each its own `Data` struct type, allowing abitrary on-chain NFT data.
 
