@@ -367,11 +367,10 @@ Available settings:
 Because current version of SnarkOS/SnarkVM does not support dynamic contract calls, the same approach as for fungible tokens of making a NFT registry program would reduce the amount of programs to deploy on the network.
 
 It is trickier than for fungible tokens though, because of the requirement to support arbitrary on-chain data structure for NFTs.
-It can be done by including in the registry's NFT record the hash of the arbitrary data struct, with an 'external autorization party' for each possible data struct. That external party program would be responsible for the transfer of the arbitrary private data. You would still have to deploy one marketplace program for each data struct anyway, to guaranty transactional disclosure of private on-chain data to the buyer.
 
-ARC-0722 is still in progress.
+[ARC-0722 proposal discussion can be found here.](https://github.com/AleoNet/ARCs/discussions/80)
 
-### Settings
+### Settings Struct
 
 Instead of using a mapping with one index for each setting value, we could use a cleaner metadata struct for the collection, as ARC-20/21 do.
 
