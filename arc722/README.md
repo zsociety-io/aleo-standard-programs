@@ -1,7 +1,7 @@
 # ARC-0722
 
 **Title:** Aleo NFT Registry<br/>
-**Authors:** Capncrunch<br/>
+**Authors:** <pa@zsociety.io><br/>
 **Discussion:** ARC-0722 Aleo NFT Registry<br/>
 **Topic:** Application<br/>
 **Status:** Draft<br/>
@@ -11,7 +11,9 @@
 
 The Aleo NFT Registry extends ARC721 standard, defining a registry for NFTs through ARC722 standard, similar to how ARC21 builds on ARC20 for fungible tokens.
 
-Moreover, ARC722 can be implemented with any `Data` struct type, allowing abitrary on-chain NFT data.
+However it has it comes with a own that does not exist for fungible tokens, because of the requirement to support arbitrary on-chain data structure for NFTs.
+
+The proposed solution is to allow multiple registry implementing ARC722, with each its own `Data` struct type, allowing abitrary on-chain NFT data.
 
 [Such an implementation can be found here](./src/main.leo), with `Data` defined as:
 
@@ -21,11 +23,11 @@ struct Data {
 }
 ```
 
+NFT collections are then identified by the unique pair: `(registry_program_id, collection_id)`.
+
 ## Enforcing Registry list
 
-Since multiple registry, will co-exist, we should decide on how we keep track of registry program list. Here are two propositions, but feel free to make any additional suggestions.
+Since multiple registry will co-exist, we should decide on how we keep track of registry program list. Here are two propositions, but feel free to make any additional suggestions.
 
 1. Explorers could maintain a list of valid ARC722 implementations.
 2. Wallets could allow to add custom registry programs, similar to how MetaMask allows adding custom token contracts.
-
-NFT collections are then identified by the unique pair: `(registry_program_id, collection_id)`.
