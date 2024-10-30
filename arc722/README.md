@@ -2,7 +2,7 @@
 
 ARC722 defines a registry for NFTs to extend ARC721 standard, as ARC21 does for ARC20 fungible tokens.
 
-More over, ARC722 can be implemented with any 'Data' struct, allowing abitrary on-chain NFT data.
+Moreover, ARC722 can be implemented with any 'Data' struct, allowing abitrary on-chain NFT data.
 
 ## Registry list enforcement
 
