@@ -15,7 +15,7 @@ However it comes with a challenge that does not exist for fungible tokens: how t
 
 The proposed solution is to allow multiple registry implementing ARC722, with each its own `Data` struct type, allowing abitrary on-chain NFT data.
 
-[Such an implementation of ARC722 can be found here](./src/main.leo), with `Data` defined as:
+[Such an implementation of ARC722 can be found here](https://github.com/zsolutions-io/aleo-standard-programs/blob/main/arc722/src/main.leo), with `Data` defined as:
 
 ```rust
 struct Data {
@@ -31,3 +31,8 @@ Since multiple registry will co-exist, we should decide on how we keep track of 
 
 1. Explorers could maintain a list of valid ARC722 implementations.
 2. Wallets could allow to add custom registry programs, similar to how MetaMask allows adding custom token contracts.
+
+## References
+
+[ARC-0721: NFTs with owner and data privacy](https://vote.aleo.org/p/721)
+[ARC-0021: Multi-Token Standard Program](https://vote.aleo.org/p/21)
