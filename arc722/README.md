@@ -30,4 +30,4 @@ Here are two possible ways of registry program enforcement.
 
 Feel free to make any suggestions.
 
-NFT collections would be identified by the unique pair: `(registry_program_id, collection_id)`.
+NFT collections are then identified by the unique pair: `(registry_program_id, collection_id)`.
