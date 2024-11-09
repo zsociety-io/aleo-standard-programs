@@ -776,7 +776,7 @@ program nft_registry.aleo {
         for_all_approvals.set(apvl_hash, new_value);
     }
 
-    
+
     async transition approve_public(
         private collection_id: field,
         private spender: address,
@@ -885,7 +885,7 @@ program nft_registry.aleo {
             edition: nft_edition
         };
         return (
-            nft_view,
+            nft,
             transfer_from_public_to_private_future
         );
     }
