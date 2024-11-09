@@ -864,33 +864,34 @@ program nft_registry.aleo {
     }
 
 
-    async transition transfer_from_as_signer(
+    async transition transfer_from_public_to_private(
         private collection_id: field,
         public from: address,
         public recipient: address,
         private nft_data: Data,
         private nft_edition: scalar,
-    ) -> (NFTView, Future) {
+    ) -> (NFT, Future) {
         let nft_id_hash: field = hash_nft_id(collection_id, nft_data, nft_edition);
         let apvl_hash: field = hash_approval(collection_id, from, self.signer);
-        let transfer_from_as_signer_future: Future =
-            finalize_transfer_from_as_signer(apvl_hash, from, recipient, nft_id_hash);
+        let transfer_from_public_to_private_future: Future =
+            finalize_transfer_from_public_to_private(
+                apvl_hash, from, nft_id_hash
+            );
 
-        let nft_view: NFTView = NFTView {
+        let nft: NFT = NFT {
             owner: recipient,
+            collection_id: collection_id,
             data: nft_data,
-            edition: nft_edition,
-            is_view: true
+            edition: nft_edition
         };
         return (
             nft_view,
-            transfer_from_as_signer_future
+            transfer_from_public_to_private_future
         );
     }
-    async function finalize_transfer_from_as_signer(
+    async function finalize_transfer_from_public_to_private(
         apvl_hash: field,
         from: address,
-        recipient: address,
         nft_id_hash: field,
     ) {
         assert(
@@ -902,7 +903,7 @@ program nft_registry.aleo {
         assert_eq(from, owner);
         
         nft_approvals.remove(nft_id_hash);
-        nft_owners.set(nft_id_hash, recipient);
+        nft_owners.remove(nft_id_hash);
     }
 
 
