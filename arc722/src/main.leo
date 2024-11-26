@@ -42,11 +42,6 @@ program nft_registry.aleo {
         private edition: scalar,
     }
 
-    record Authorization {
-        private owner: address,
-        private collection_id: field
-    }
-
     record NFTView {
         private owner: address,
         private data: Data,
@@ -591,9 +586,9 @@ program nft_registry.aleo {
             collection_id, nft_data, nft_edition
         );
         let admin_nft_id_hash: field = hash_admin_nft_id(collection_id);
-        let burn_authorization_future: Future = 
+        let burn_public_future: Future = 
             finalize_burn_public(self.caller, nft_id_hash, admin_nft_id_hash);
-        return burn_authorization_future;
+        return burn_public_future;
     }
     async function finalize_burn_public(
         caller: address,
