@@ -1,0 +1,14 @@
+{
+  "program": "nft_registry.aleo",
+  "version": "0.1.0",
+  "description": "",
+  "license": "MIT",
+  "dependencies": [
+    {
+      "name": "nft_records.aleo",
+      "location": "local",
+      "network": null,
+      "path": "../records"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+[[package]]
+name = "nft_records.aleo"
+location = "local"
+path = "/Users/palong/bandersnatch/projects/aleo-standard-programs/arc722/registry/../records"
+checksum = "3b5556232470a8db2de8919f775efabcff8f2f6079c87109f49f89921a8de2f7"
+dependencies = []
